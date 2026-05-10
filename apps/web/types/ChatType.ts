@@ -1,14 +1,18 @@
  export interface Message {
-  messages: any;
-  id:number;
+  id:string;
   sender: string;
   text: string;
+  senderName: string | null;
   isSelf: boolean;
-  createdAt?: string
+  createdAt?: Date
 }
 
+export type MessageResponse = {
+  messages: any[];
+};
+
 export interface ChatCardProps {
-  roomName: string;
+  Socket?: WebSocket | null;
   roomId?: string;
   isOpen: boolean;
   onClose?: () => void;

@@ -4,7 +4,7 @@ import { WebSocketServer } from "ws";
 import { userManager } from "./manager/user.manager";
 import { roomManager } from "./manager/room.manager";
 import { checkUser } from "./validation/checkuser";
-import { cleanupSnapshotsByRoom } from "./services/room.service";
+
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -60,7 +60,7 @@ wss.on("connection", (ws, request) => {
           break;
 
         case "chat":
-          roomManager.sendMessage(parseData.roomId, parseData.message, userId);
+          roomManager.sendMessage(parseData.roomId, parseData.message, userId , parseData.clientId );
           break;
 
         case "realtime_drawing":
@@ -73,6 +73,14 @@ wss.on("connection", (ws, request) => {
             parseData.shapeId
           );
           break;
+
+        case "reset_canvas":
+        await roomManager.resetCanvas(parseData.roomId);
+         break;  
+
+         case "shape_update":
+         await roomManager.sendShapes(parseData.roomId  ,parseData.coordinate);
+         break;
       }
 
     } catch (err) {
@@ -82,35 +90,25 @@ wss.on("connection", (ws, request) => {
   });
 
 
+  
+ws.on("close", async () => {
+  console.log("User disconnected");
 
-  // ws.on("close", async() => {
-  //   console.log("User disconnected");
-
-  //   const rooms = userManager.getUserRooms(ws);
-
-  //   rooms.forEach((roomId) => {
-  //    await roomManager.leaveRoom(ws, roomId); //remove from room + cleanup
-
-  //   })
-
-  //   userManager.removeUser(ws); // finally remove user
-  // });
-  ws.on("close", async () => {
-    console.log("User disconnected");
+  try {
 
     const rooms = userManager.getUserRooms(ws);
 
-    try {
-      for (const roomId of rooms) {
-        await roomManager.leaveRoom(ws, roomId);
-
-      }
-    } catch (err) {
-      console.error("Error during leaveRoom:", err);
+    for (const roomId of rooms) {
+      await roomManager.leaveRoom(ws, roomId);
     }
 
+    // REMOVE USER
     userManager.removeUser(ws);
-  });
+
+  } catch (err) {
+    console.error("Error during leaveRoom:", err);
+  }
+});
 
   ws.send(JSON.stringify({ type: "connected" }));
 });

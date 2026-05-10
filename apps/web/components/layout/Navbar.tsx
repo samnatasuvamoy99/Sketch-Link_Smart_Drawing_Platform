@@ -4,14 +4,21 @@ import { Pencil, Square, Circle, Diamond, ArrowRight, Minus, Users, Eraser, Imag
 import { ChatCard } from '../chat/ChatCard';
 import { TextFormat } from '@/app/icon/Text';
 import { StrokeStyle } from '@/types/DrawingShapesTypes';
+
+
 type Props = {
   username?: string,
   onToolSelect?: (tool: string) => void;
   onStrokeChange?: (stroke: StrokeStyle) => void;
+  roomId?:string
+  token?:string
+  Socket?: WebSocket | null;
 };
 
+
+
 // import 
-export function SketchNavbar({ username, onToolSelect , onStrokeChange }: Props) {
+export function SketchNavbar({ username, onToolSelect , onStrokeChange , roomId , token  , Socket}: Props) {
 
 const [activeTool, setActiveTool] = useState<string | undefined>(undefined);
   // const [strokeStyle, setStrokeStyle] = useState("solid")
@@ -26,7 +33,7 @@ const [activeStroke, setActiveStroke] = useState<StrokeStyle>("solid");
     { id: "diamond", icon: <Diamond size={13} /> },
     { id: "arrow", icon: <ArrowRight size={13} /> },
     { id: "line", icon: <Minus size={13} /> },
-    { id: "erase", icon: <Eraser size={13} /> },
+    { id: "eraser", icon: <Eraser size={13} /> },
     { id: "insert", icon: <Image size={13} /> },
     { id: "text", icon: <TextFormat size={20} className="text-white" /> }
 
@@ -130,10 +137,10 @@ const handleStrokeClick = (style: StrokeStyle) => {
 
         {showChat && (
           <ChatCard
-            roomId="34gftdnjdd786bbsbdjwj"
-            roomName="suvamoy98"
+            roomId={roomId}
             isOpen={showChat}
             onClose={() => setShowChat(false)}
+            Socket={Socket}
           />
         )}
 

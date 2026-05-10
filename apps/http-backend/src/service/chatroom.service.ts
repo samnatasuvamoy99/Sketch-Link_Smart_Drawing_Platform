@@ -1,6 +1,6 @@
 
 import {prisma} from "@repo/db/client"
-import { userRoomSchema ,ChatRoomId} from "../schema/data_validation.schema.js";
+import { userRoomSchema ,ChatRoomId ,fetchRoomId} from "../schema/data_validation.schema.js";
 
 
 export const CreateRoomService = async (body :any , userId: string)=>{
@@ -48,7 +48,12 @@ export const ChatsRoomMessage = async (body: any) => {
     orderBy:{
         id:"desc"
     },
-    take:50
+    take:50,
+    include: {
+      user: {
+        select: { username: true }, //join username
+      },
+    },
   });
 
   return messages;
@@ -69,4 +74,19 @@ export const RoomIdUsingSlug = async (body: any) => {
   });
 
   return slugRoomId;
+};
+
+
+
+//Service -> fetch slug using RoomId from db...
+// 
+export const SlugUsingRoomID = async (roomId: string) => {
+  return prisma.room.findUnique({
+    where: {
+      id: roomId, //  must be string
+    },
+    select: {
+      slug: true,
+    },
+  });
 };

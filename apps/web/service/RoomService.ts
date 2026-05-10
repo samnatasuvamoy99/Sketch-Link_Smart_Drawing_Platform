@@ -2,7 +2,7 @@
 import { CreateRoomResponse, JoinRoomResponse} from '../types/RoomType';
 import { BACKEND_URL, FRONTEND_URL } from '../config';
 import { getCurrentUser } from "./getCurrentDetails"
-import { Message } from '@/types/ChatType';
+import { Message , MessageResponse } from '@/types/ChatType';
 
 
 
@@ -95,16 +95,17 @@ export async function FetchMessages(roomId: string): Promise<Message[]> {
     throw new Error("Failed to fetch messages");
   }
 
-  const result: Message = await res.json();
+  const result:MessageResponse  = await res.json();
 
-  const currentUserId = await getCurrentUser(); // get the current userId;
+  //const currentUserId = await getCurrentUser(); // get the current userId;
 
- return result.messages.map((msg: any) => ({
-    id: String(msg.id),
-    sender: msg.userId,
-    text: msg.message,
-    isSelf: msg.userId === currentUserId,
-    createdAt: msg.createdAt,
-  }));
+//  return result.messages.map((msg: any) => ({
+//     id: String(msg.id),
+//     sender: msg.userId,
+//     text: msg.message,
+//     isSelf: msg.userId === currentUserId,
+//     createdAt: msg.createdAt,
+//   }));
 
+  return result.messages;
 }

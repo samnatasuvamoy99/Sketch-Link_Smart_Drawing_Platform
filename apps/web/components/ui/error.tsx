@@ -1,4 +1,6 @@
    
+import React from 'react';
+
 type Props = {
   error?: any;
 };
@@ -20,7 +22,7 @@ function Error({error}:Props){
 
         {/* Title */}
         <h2 className="text-2xl font-bold text-red-400">
-          Join Failed
+          Join Failed 
         </h2>
 
         {/* Message */}
@@ -39,7 +41,7 @@ function Error({error}:Props){
           </button>
 
           <button
-            onClick={() => (window.location.href = "/")}
+            onClick={() => (window.location.href = "/dashboard")}
             className="px-5 py-2 rounded-lg border border-white/20 text-white hover:bg-white/10 transition-all duration-200"
           >
             Go Home

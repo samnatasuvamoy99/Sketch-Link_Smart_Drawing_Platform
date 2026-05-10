@@ -19,3 +19,12 @@ export const CreateRoomSchema = z.object({
 export const ChatRooms_Id = z.string().uuid("Invalid Room ID format");
 
 export type ChatRoomIdType = z.infer<typeof ChatRooms_Id>;
+
+
+
+
+export const Room_Id = z.object({
+  roomId: z.string().uuid("Invalid Room ID format"),
+});
+
+export type RoomId = z.infer<typeof Room_Id>;

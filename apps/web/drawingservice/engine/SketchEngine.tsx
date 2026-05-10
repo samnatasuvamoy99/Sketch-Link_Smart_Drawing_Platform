@@ -4,9 +4,6 @@ import { drawArrow } from "@/drawingservice/util/Drawarrow";
 import { applyStrokeStyle } from "@/drawingservice/util/StrokeStyle";
 import { distance } from "../util/PixelHitPoint";
 
-
-
-
 export class SketchEngine {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -23,7 +20,7 @@ export class SketchEngine {
   private strokeWidth = 2;
   private strokeStyle?: StrokeStyle;
   private eraserSize = 10;
-
+  private cleanupSocket?: () => void;
 
   private clicked = false;
   private startX = 0;
@@ -32,13 +29,19 @@ export class SketchEngine {
   private textX = 0;
   private textY = 0;
 
+
+private isDragging = false;
+private selectedShapeId: string | null = null;
+private dragStartX = 0;
+private dragStartY = 0;
+
   constructor(
     canvas: HTMLCanvasElement,
     options?: {
       socket?: WebSocket;
       roomId?: string;
       textarea?: HTMLTextAreaElement | null;
-      initialShapes?: Shape[]; // loading prev shapes.....
+      initialShapes?: Shape[];
     }
   ) {
     this.canvas = canvas;
@@ -51,17 +54,14 @@ export class SketchEngine {
     this.roomId = options?.roomId;
     this.textarea = options?.textarea;
 
-    //for loading prev shapes.....
     if (options?.initialShapes) {
       this.shapes = options.initialShapes;
     }
-
 
     this.setupCanvas();
     this.attachEvents();
     this.setupTextarea();
     this.setupSocket();
-
     this.redraw();
   }
 
@@ -80,6 +80,22 @@ export class SketchEngine {
     this.ctx.lineJoin = "round";
   }
 
+
+  private getShapeAtPosition(pos: { x: number; y: number }) {
+
+  for (let i = this.shapes.length - 1; i >= 0; i--) {
+
+    const shape = this.shapes[i];
+
+    if (this.isShapeHit(shape, pos)) {
+      return shape;
+    }
+  }
+
+  return null;
+}
+
+
   // ================= SETTERS =================
   setTool(t: string) { this.tool = t; }
   setColor(c: string) { this.color = c; }
@@ -90,34 +106,94 @@ export class SketchEngine {
   private setupSocket() {
     if (!this.socket) return;
 
-    this.socket.addEventListener("message", (e) => {
+    const handler = (e: MessageEvent) => {
       const data = JSON.parse(e.data);
 
       if (data.type === "realtime_drawing") {
         const shape = JSON.parse(data.coordinate)?.shape;
-        if (shape) {
+        if (shape && data.roomId === this.roomId) {
           this.shapes.push(shape);
           this.redraw();
         }
       }
-    });
+
+      if (data.type === "erase" && data.roomId === this.roomId) {
+        this.shapes = this.shapes.filter(s => s.id !== data.shapeId);
+        this.redraw();
+      }
+
+      // reset...
+     if (data.type === "reset_canvas") {
+
+      if (data.roomId === this.roomId) {
+
+        this.shapes = [];
+
+        this.redraw();
+      }
+    }
+    };
+
+    this.socket.addEventListener("message", handler);
+
+    this.cleanupSocket = () => {
+      this.socket?.removeEventListener("message", handler);
+    };
+  }
+
+
+  //  RESET 
+public resetCanvas() {
+
+  // CLEAR LOCAL SHAPES
+  this.shapes = [];
+
+  // REDRAW EMPTY CANVAS
+  this.redraw();
+
+  // SEND RESET TO OTHER USERS
+  if (this.socket && this.roomId) {
+    this.socket.send(
+      JSON.stringify({
+        type: "reset_canvas",
+        roomId: this.roomId,
+      })
+    );
+  }
+}
+
+
+  private sendErase(shapeId: string) {
+    if (!this.socket) return;
+    this.socket.send(JSON.stringify({
+      type: "erase",
+      roomId: this.roomId,
+      shapeId,
+    }));
   }
 
   private send(shape: Shape) {
     if (!this.socket) return;
-
     this.socket.send(JSON.stringify({
       type: "realtime_drawing",
       coordinate: JSON.stringify({ shape }),
       roomId: this.roomId,
     }));
-
-    this.socket.send(JSON.stringify({
-      type: "erase",
-      roomId: this.roomId,
-      shapeId: shape.id   //NOT x,y
-    }));
   }
+
+  private sendUpdate(shape: Shape) {
+
+  if (!this.socket) return;
+
+  this.socket.send(
+    JSON.stringify({
+      type: "shape_update",
+      roomId: this.roomId,
+      coordinate: JSON.stringify({ shape }),
+    })
+  );
+}
+
 
   // ================= TEXT =================
   private setupTextarea() {
@@ -139,9 +215,6 @@ export class SketchEngine {
     if (!this.textarea) return;
 
     const value = this.textarea.value.trim();
-
-    console.log("Committing text:", value);
-
     if (!value) {
       this.hideTextarea();
       return;
@@ -158,10 +231,8 @@ export class SketchEngine {
     };
 
     this.shapes.push(shape);
-
     this.redraw();
     this.send(shape);
-
     this.hideTextarea();
   }
 
@@ -174,14 +245,11 @@ export class SketchEngine {
 
   // ================= DRAW =================
   private redraw() {
-    // Get actual display size
     const displayWidth = this.canvas.clientWidth;
     const displayHeight = this.canvas.clientHeight;
 
-    // Clear entire canvas (using internal dimensions)
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Draw black background (using display dimensions since we have DPR scaling)
     this.ctx.fillStyle = "#000000";
     this.ctx.fillRect(0, 0, displayWidth, displayHeight);
 
@@ -237,7 +305,6 @@ export class SketchEngine {
           this.ctx.fillStyle = s.color || "#fff";
           this.ctx.font = `${s.fontSize || 16}px sans-serif`;
           this.ctx.textBaseline = "top";
-          console.log("Drawing text:", s.text, "at", s.x, s.y, "color:", s.color);
           this.ctx.fillText(s.text, s.x, s.y);
           break;
       }
@@ -246,54 +313,26 @@ export class SketchEngine {
     }
   }
 
-
-
-  // ================= EVENTS =================
-  private getPos(e: MouseEvent) {
-    const rect = this.canvas.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  // ================= ERASER CURSOR =================
+  private drawEraserCursor(x: number, y: number) {
+    this.ctx.save();
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, this.eraserSize, 0, Math.PI * 2);
+    this.ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+    this.ctx.lineWidth = 1.5;
+    this.ctx.setLineDash([4, 4]);
+    this.ctx.stroke();
+    this.ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+    this.ctx.fill();
+    this.ctx.restore();
   }
 
-  private onMouseDown = (e: MouseEvent) => {
-    const pos = this.getPos(e);
-
-    if (this.tool === "text" && this.textarea) {
-      this.textX = pos.x;
-      this.textY = pos.y;
-
-      this.textarea.style.display = "block";
-      this.textarea.style.left = `${pos.x}px`;
-      this.textarea.style.top = `${pos.y}px`;
-
-      this.isTyping = true;
-
-      setTimeout(() => {
-        this.textarea?.focus();
-      }, 0);
-
-      return;
-    }
-
-    this.clicked = true;
-    this.startX = pos.x;
-    this.startY = pos.y;
-
-    if (this.tool === "pencil") {
-      this.path = [pos];
-    }
-  };
-
-
-
-  //Calculate point Near Line
+  // ================= HIT TESTING =================
   private pointNearLine(
-    px: number,
-    py: number,
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number
-  ) {
+    px: number, py: number,
+    x1: number, y1: number,
+    x2: number, y2: number
+  ): boolean {
     const A = px - x1;
     const B = py - y1;
     const C = x2 - x1;
@@ -303,14 +342,12 @@ export class SketchEngine {
     const lenSq = C * C + D * D;
     const param = lenSq !== 0 ? dot / lenSq : -1;
 
-    let xx, yy;
+    let xx: number, yy: number;
 
     if (param < 0) {
-      xx = x1;
-      yy = y1;
+      xx = x1; yy = y1;
     } else if (param > 1) {
-      xx = x2;
-      yy = y2;
+      xx = x2; yy = y2;
     } else {
       xx = x1 + param * C;
       yy = y1 + param * D;
@@ -319,12 +356,20 @@ export class SketchEngine {
     return distance(px, py, xx, yy) <= this.eraserSize;
   }
 
-
-  // Shape hit Distance...
-  private isShapeHit(shape: Shape, pos: { x: number; y: number }) {
+  private isShapeHit(shape: Shape, pos: { x: number; y: number }): boolean {
     const { x, y } = pos;
 
     switch (shape.type) {
+      case "pencil":
+        return shape.points.some((pt, i) => {
+          if (i === 0) return false;
+          return this.pointNearLine(
+            x, y,
+            shape.points[i - 1].x, shape.points[i - 1].y,
+            pt.x, pt.y
+          );
+        });
+
       case "rectangle":
         return (
           x >= shape.x - this.eraserSize &&
@@ -341,10 +386,28 @@ export class SketchEngine {
 
       case "line":
       case "arrow":
-        return this.pointNearLine(
-          x, y,
-          shape.x1, shape.y1,
-          shape.x2, shape.y2
+        return this.pointNearLine(x, y, shape.x1, shape.y1, shape.x2, shape.y2);
+
+      case "ellipse":
+        return (
+          distance(x, y, shape.centerX, shape.centerY) <=
+          Math.max(shape.radiusX, shape.radiusY) + this.eraserSize
+        );
+
+      case "diamond":
+        return (
+          x >= shape.x - this.eraserSize &&
+          x <= shape.x + shape.width + this.eraserSize &&
+          y >= shape.y - this.eraserSize &&
+          y <= shape.y + shape.height + this.eraserSize
+        );
+
+      case "text":
+        return (
+          x >= shape.x - this.eraserSize &&
+          x <= shape.x + 100 &&
+          y >= shape.y - this.eraserSize &&
+          y <= shape.y + 30
         );
 
       default:
@@ -352,15 +415,89 @@ export class SketchEngine {
     }
   }
 
+  // ================= EVENTS =================
+  private getPos(e: MouseEvent) {
+    const rect = this.canvas.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
 
-//mousemove event in canvas............
+  private onMouseDown = (e: MouseEvent) => {
+    const pos = this.getPos(e);
+
+    // ================= SELECT TOOL =================
+
+if (this.tool === "select") {
+
+  const shape = this.getShapeAtPosition(pos);
+
+  if (!shape) {
+    this.selectedShapeId = null;
+    this.redraw();
+    return;
+  }
+
+  this.selectedShapeId = shape.id;
+
+  // START DRAGGING
+  this.isDragging = true;
+
+  this.dragStartX = pos.x;
+  this.dragStartY = pos.y;
+
+  this.redraw();
+
+  return;
+}
+
+    if (this.tool === "text" && this.textarea) {
+      this.textX = pos.x;
+      this.textY = pos.y;
+      this.textarea.style.display = "block";
+      this.textarea.style.left = `${pos.x}px`;
+      this.textarea.style.top = `${pos.y}px`;
+      this.isTyping = true;
+      setTimeout(() => this.textarea?.focus(), 0);
+      return;
+    }
+
+    this.clicked = true;
+    this.startX = pos.x;
+    this.startY = pos.y;
+
+    if (this.tool === "pencil") {
+      this.path = [pos];
+    }
+
+  };
+
   private onMouseUp = (e: MouseEvent) => {
     if (!this.clicked) return;
     this.clicked = false;
 
     const pos = this.getPos(e);
+
+// ================= STOP SELECT DRAG =================
+
+if (this.tool === "select") {
+
+  this.isDragging = false;
+
+  const shape = this.shapes.find(
+    s => s.id === this.selectedShapeId
+  );
+
+  if (shape) {
+    this.sendUpdate(shape);
+  }
+
+  return;
+}
+
     const dx = pos.x - this.startX;
     const dy = pos.y - this.startY;
+
+    // Eraser doesn't create shapes
+    if (this.tool === "eraser") return;
 
     let shape: Shape | null = null;
 
@@ -375,7 +512,7 @@ export class SketchEngine {
           height: dy,
           color: this.color,
           strokeWidth: this.strokeWidth,
-          strokeStyle: this.strokeStyle
+          strokeStyle: this.strokeStyle,
         };
         break;
 
@@ -389,7 +526,7 @@ export class SketchEngine {
           y2: pos.y,
           color: this.color,
           strokeWidth: this.strokeWidth,
-          strokeStyle: this.strokeStyle
+          strokeStyle: this.strokeStyle,
         };
         break;
 
@@ -403,7 +540,7 @@ export class SketchEngine {
           y2: pos.y,
           color: this.color,
           strokeWidth: this.strokeWidth,
-          strokeStyle: this.strokeStyle
+          strokeStyle: this.strokeStyle,
         };
         break;
 
@@ -417,7 +554,7 @@ export class SketchEngine {
           height: dy,
           color: this.color,
           strokeWidth: this.strokeWidth,
-          strokeStyle: this.strokeStyle
+          strokeStyle: this.strokeStyle,
         };
         break;
 
@@ -431,7 +568,7 @@ export class SketchEngine {
             radius: Math.sqrt(dx * dx + dy * dy),
             color: this.color,
             strokeWidth: this.strokeWidth,
-            strokeStyle: this.strokeStyle
+            strokeStyle: this.strokeStyle,
           };
         } else {
           shape = {
@@ -443,7 +580,7 @@ export class SketchEngine {
             radiusY: Math.abs(dy),
             color: this.color,
             strokeWidth: this.strokeWidth,
-            strokeStyle: this.strokeStyle
+            strokeStyle: this.strokeStyle,
           };
         }
         break;
@@ -455,30 +592,56 @@ export class SketchEngine {
           points: this.path,
           color: this.color,
           strokeWidth: this.strokeWidth,
-          strokeStyle: this.strokeStyle
+          strokeStyle: this.strokeStyle,
         };
         break;
     }
 
     if (!shape) return;
-    // this.shapes.push(shape);
-    // this.redraw();
-    if (!this.shapes.find(s => s.id === shape.id)) {
+
+    if (!this.shapes.find(s => s.id === shape!.id)) {
       this.shapes.push(shape);
       this.redraw();
     }
     this.send(shape);
+
+
   };
 
-
-//mousemove event in canvas.................
   private onMouseMove = (e: MouseEvent) => {
-    if (!this.clicked || this.isTyping) return;
+    if (this.isTyping) return; // ← only block typing, NOT all non-clicked states
 
     const pos = this.getPos(e);
 
-    this.redraw();
+    // ── ERASER ──────────────────────────────────────────────
+    if (this.tool === "eraser") {
+     
+  
+      this.drawEraserCursor(pos.x, pos.y);
 
+     
+      if (!this.clicked) return;
+
+      const newShapes: Shape[] = [];
+      for (const shape of this.shapes) {
+        if (this.isShapeHit(shape, pos)) {
+          this.sendErase(shape.id);
+        } else {
+          newShapes.push(shape);
+        }
+      }
+      this.shapes = newShapes;
+
+   
+      this.redraw();
+      this.drawEraserCursor(pos.x, pos.y);
+      return;
+    }
+
+    // ── ALL OTHER TOOLS ──────────────────────────────────────
+    if (!this.clicked) return;
+
+    this.redraw();
     this.ctx.strokeStyle = this.color;
     this.ctx.lineWidth = this.strokeWidth;
     applyStrokeStyle(this.ctx, this.strokeStyle);
@@ -528,48 +691,27 @@ export class SketchEngine {
         break;
     }
 
-    
-    // erase functionality
-    if (this.tool === "eraser" && this.clicked) {
-      const pos = this.getPos(e);
 
-      this.shapes = this.shapes.map(shape => {
-        if (shape.type === "pencil") {
-          //remove only points near eraser
-          const newPoints = shape.points.filter(p =>
-            distance(p.x, p.y, pos.x, pos.y) > this.eraserSize
-          );
-
-          return {
-            ...shape,
-            points: newPoints
-          };
-        }
-
-        //other shapes → remove whole shape if hit
-        if (this.isShapeHit(shape, pos)) {
-          return null;
-        }
-
-        return shape;
-      }).filter(Boolean) as Shape[];
-
-      this.redraw();
-      return;
-    }
+ 
   };
 
-
+  private onMouseLeave = () => {
+    // Clear the eraser cursor ring when mouse exits canvas
+    this.redraw();
+  };
 
   private attachEvents() {
     this.canvas.addEventListener("mousedown", this.onMouseDown);
     this.canvas.addEventListener("mouseup", this.onMouseUp);
     this.canvas.addEventListener("mousemove", this.onMouseMove);
+    this.canvas.addEventListener("mouseleave", this.onMouseLeave);
   }
 
   destroy() {
     this.canvas.removeEventListener("mousedown", this.onMouseDown);
     this.canvas.removeEventListener("mouseup", this.onMouseUp);
     this.canvas.removeEventListener("mousemove", this.onMouseMove);
+    this.canvas.removeEventListener("mouseleave", this.onMouseLeave);
+    this.cleanupSocket?.();
   }
 }

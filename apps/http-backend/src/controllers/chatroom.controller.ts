@@ -1,7 +1,8 @@
 
-import { CreateRoomService ,ChatsRoomMessage,RoomIdUsingSlug} from "../service/chatroom.service.js";
+import { CreateRoomService ,ChatsRoomMessage,RoomIdUsingSlug , SlugUsingRoomID} from "../service/chatroom.service.js";
 import { Request, Response } from "express";
-import { ChatRoomId} from "../schema/data_validation.schema.js";
+import { ChatRoomId ,fetchRoomId} from "../schema/data_validation.schema.js";
+
 
 
 export const createRoomController = async (
@@ -75,6 +76,33 @@ export const roomIdFromSlug = async (req: Request, res: Response) => {
     return res.status(200).json({
       message: "Messages fetched successfully",
       roomId,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      message: error.message || "Internal Server Error",
+    });
+  }
+};
+
+
+
+//find Slug from roomId
+export const SlugUsingRoom = async (req: Request, res: Response) => {
+  try {
+    
+    const parsed = fetchRoomId.safeParse(req.body);
+
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid Room ID",
+      });
+    }
+
+    
+   const SlugName = await SlugUsingRoomID(parsed.data.roomId);
+
+    return res.status(200).json({
+      slug: SlugName?.slug
     });
   } catch (error: any) {
     return res.status(500).json({

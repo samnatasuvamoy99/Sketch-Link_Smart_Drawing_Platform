@@ -1,5 +1,8 @@
 import { BACKEND_URL } from "@/config";
 
+type RoomSlugResponse = {
+  slug: string;
+};
 
 //this is the current userId ;
 export async function getCurrentUser() {
@@ -46,4 +49,26 @@ export async function getCurrentUserName() {
 
 }
 
+
+//get room-name using roomId
+export async function getCurrentRoomSlug(roomId: string) {
+  const res = await fetch(
+    `${BACKEND_URL}/message/v2/admin/chat/chatroom/slug`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ roomId }), 
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch room slug");
+  }
+
+  const data = await res.json();
+  return data.slug;
+}
 

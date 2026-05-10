@@ -2,23 +2,7 @@ import {prisma} from "@repo/db/client";
 
 
 
-// delete all coordinate after disconnect the meeting
-// export async function cleanupSnapshotsByRoom(roomId: string) {
-//   const TWO_MINUTES = 2 * 60 * 1000;
-//   //const cutoff = new Date(Date.now() - TWO_MINUTES);
 
-// console.log("coordinate deleted");
-
-//   const result = await prisma.shape.deleteMany({
-//     where: {
-//       roomId,
-      
-//     },
-     
-//   });
-
-//   console.log(`Old snapshots deleted for room ${roomId}:`, result.count);
-// }
 
 export async function cleanupSnapshotsByRoom(roomId: string) {
 
@@ -92,4 +76,38 @@ export async function saveCoordinate(roomId: string,  coordinate:any) {
   });
 
   console.log("database pushed the coordinates");
+}
+
+
+
+// DELETE CHAT 
+export async function cleanupChatsByRoom(roomId: string) {
+
+  console.log("Deleting chats for room:", roomId);
+
+  const result = await prisma.chat.deleteMany({
+    where: {
+      roomId,
+    },
+  });
+
+  console.log("Chats deleted:", result.count);
+
+  return result.count;
+}
+
+// DELETE ROOM FROM DATABASE
+
+export async function cleanupRoomById(roomId: string) {
+  console.log("Deleting room from database:", roomId);
+
+  const result = await prisma.room.delete({
+    where: {
+      id: roomId,
+    },
+  });
+
+  console.log("Room deleted from DB:", result.id);
+
+  return result;
 }

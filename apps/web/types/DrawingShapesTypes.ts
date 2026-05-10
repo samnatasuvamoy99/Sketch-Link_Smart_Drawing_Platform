@@ -1,5 +1,9 @@
 
 import React from "react";
+import { SketchEngine} from "@/drawingservice/engine/SketchEngine";
+
+
+
 
 export type StrokeStyle = "solid" | "dashed" | "dotted" | "bold";
 
@@ -87,19 +91,18 @@ export type CanvasProps = {
   color: string;          
   strokeWidth?: number; 
   strokeStyle?:StrokeStyle
+  onEngineReady?: (engine: SketchEngine) => void;
 };
 
 
 export type CanvasDrawingProps = {
   roomId?: string;
-
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   textAreaRef?: React.RefObject<HTMLTextAreaElement | null>;
-
   tool?: string;
   color?: string;
   strokeWidth?: number;
   strokeStyle?: StrokeStyle;
-
+  onEngineReady?: (engine: SketchEngine) => void;
   Socket?: WebSocket;
 };

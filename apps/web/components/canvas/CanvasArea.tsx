@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -15,12 +16,18 @@ export function CanvasDrawing({
   strokeWidth,
   strokeStyle,
   Socket,
-  roomId
+  roomId,
+  onEngineReady
 }: CanvasDrawingProps) {
-
   const engineRef = useRef<SketchEngine | null>(null);
+  const socketRef = useRef<WebSocket | undefined>(Socket); // ← stabilize socket
   const [loading, setLoading] = useState(true);
   const [initialShapes, setInitialShapes] = useState<any[]>([]);
+
+  // Keep socketRef current without triggering re-init
+  useEffect(() => {
+    socketRef.current = Socket;
+  }, [Socket]);
 
   // 1. FETCH SHAPES
   useEffect(() => {
@@ -30,7 +37,6 @@ export function CanvasDrawing({
           setLoading(false);
           return;
         }
-
         const shapes = await getExistingShapes(roomId);
         setInitialShapes(shapes);
       } catch (err) {
@@ -39,34 +45,40 @@ export function CanvasDrawing({
         setLoading(false);
       }
     };
-
     fetchShapes();
   }, [roomId]);
 
-  // 2. INIT ENGINE
+  // 2. INIT ENGINE — runs exactly once after shapes load
   useEffect(() => {
     if (!canvasRef.current || loading) return;
 
     const engine = new SketchEngine(canvasRef.current, {
-      socket: Socket,
+      socket: socketRef.current,  // use stable ref
       roomId,
       textarea: textAreaRef?.current,
-      initialShapes
+      initialShapes,
     });
 
     engineRef.current = engine;
 
-    return () => engine.destroy();
-  }, [loading, canvasRef, Socket, roomId]);
+    onEngineReady?.(engine);  // for reset
 
-  //  TOOL
+    return () => {
+      engine.destroy();
+      engineRef.current = null;
+    };
+  }, [loading]); // ← CRITICAL: only re-init when loading changes
+
+  // 3. TOOL — just call setter, no re-init
   useEffect(() => {
-    engineRef.current?.setTool(tool ?? "pencil");
+    if (!engineRef.current) return;
+    engineRef.current.setTool(tool ?? "pencil");
   }, [tool]);
 
-  //  COLOR
+  // 4. COLOR
   useEffect(() => {
-    engineRef.current?.setColor(color ?? "#fff");
+    if (!engineRef.current) return;
+    engineRef.current.setColor(color ?? "#fff");
 
     if (textAreaRef?.current) {
       textAreaRef.current.style.color = color ?? "#fff";
@@ -75,16 +87,17 @@ export function CanvasDrawing({
     }
   }, [color]);
 
-  //  STROKE WIDTH
+  // 5. STROKE WIDTH
   useEffect(() => {
-    engineRef.current?.setStroke(strokeWidth ?? 1.5);
+    if (!engineRef.current) return;
+    engineRef.current.setStroke(strokeWidth ?? 1.5);
   }, [strokeWidth]);
 
-  //  STROKE STYLE
+  // 6. STROKE STYLE
   useEffect(() => {
-    engineRef.current?.setStrokeStyle(strokeStyle ?? "solid");
+    if (!engineRef.current) return;
+    engineRef.current.setStrokeStyle(strokeStyle ?? "solid");
   }, [strokeStyle]);
-
 
   return (
     <div className="relative w-full h-full">
@@ -95,7 +108,6 @@ export function CanvasDrawing({
       ) : (
         <>
           <canvas ref={canvasRef} className="w-full h-full" />
-
           <textarea
             ref={textAreaRef}
             className="absolute hidden resize-none overflow-hidden z-[9999]"

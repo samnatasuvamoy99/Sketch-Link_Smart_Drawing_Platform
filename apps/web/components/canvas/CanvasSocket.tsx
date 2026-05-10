@@ -17,6 +17,7 @@ export default function CanvasSocket({
   color,
   strokeWidth,
   strokeStyle,
+  onEngineReady
 }: CanvasProps) {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -103,6 +104,7 @@ export default function CanvasSocket({
     color,
     strokeWidth,
     strokeStyle,
+    onEngineReady
   };
 
 
