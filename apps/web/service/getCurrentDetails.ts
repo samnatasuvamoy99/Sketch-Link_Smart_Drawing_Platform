@@ -35,18 +35,27 @@ export async function getCurrentUserRoomId() {
 
 // get username
 export async function getCurrentUserName() {
-  const res = await fetch(`${BACKEND_URL}/fetchRomId/v3/username`, {
-    credentials: "include",
-  })
-   
+  try {
+    const res = await fetch(`${BACKEND_URL}/fetchRomId/v3/username`, {
+      credentials: "include",
+    })
+     
+    
+      if (!res.ok) {
+      throw new Error("failed fetch  username");
+    }
   
-    if (!res.ok) {
-    throw new Error("failed fetch  username");
+    const  username =  await res.json();
+    return username;
+  
+  } catch (error) {
+       console.error("Username fetch error:", error);
+
+    return {
+      username: "Guest",
+    };
+  
   }
-
-  const  username =  await res.json();
-  return username;
-
 }
 
 

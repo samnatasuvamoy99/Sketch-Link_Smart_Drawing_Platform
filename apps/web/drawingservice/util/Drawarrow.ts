@@ -9,7 +9,7 @@ export function drawArrow(
   const headLength = 10;
   const angle = Math.atan2(toY - fromY, toX - fromX);
 
-  ctx.save(); // 🔥 isolate state
+  ctx.save(); // isolate state
 
   // main line
   ctx.beginPath();

@@ -4,7 +4,7 @@ import { WebSocketServer } from "ws";
 import { userManager } from "./manager/user.manager";
 import { roomManager } from "./manager/room.manager";
 import { checkUser } from "./validation/checkuser";
-
+import { updateCoordinate } from "./services/room.service";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -60,11 +60,11 @@ wss.on("connection", (ws, request) => {
           break;
 
         case "chat":
-          roomManager.sendMessage(parseData.roomId, parseData.message, userId , parseData.clientId );
+          roomManager.sendMessage(parseData.roomId, parseData.message, userId, parseData.clientId);
           break;
 
         case "realtime_drawing":
-          roomManager.sendShapes(parseData.roomId, parseData.coordinate);
+          roomManager.sendShapes(parseData.roomId, parseData.coordinate, ws);
           break;
 
         case "erase":
@@ -75,12 +75,32 @@ wss.on("connection", (ws, request) => {
           break;
 
         case "reset_canvas":
-        await roomManager.resetCanvas(parseData.roomId);
-         break;  
+          await roomManager.resetCanvas(parseData.roomId);
+          break;
 
-         case "shape_update":
-         await roomManager.sendShapes(parseData.roomId  ,parseData.coordinate);
-         break;
+        //  case "shape_update":
+        //  await roomManager.sendShapes(parseData.roomId  ,parseData.coordinate);
+        //  break;
+
+        case "shape_update": {
+          const shape = JSON.parse(parseData.coordinate)?.shape;
+          if (!shape) break;
+
+          await updateCoordinate(parseData.roomId, shape);
+
+          roomManager.broadcastUpdate(
+            parseData.roomId,
+            {
+              type: "shape_update",
+              roomId: parseData.roomId,
+              coordinate: JSON.stringify({ shape }),
+            },
+            ws
+          );
+          break;
+        }
+
+
       }
 
     } catch (err) {
@@ -90,25 +110,25 @@ wss.on("connection", (ws, request) => {
   });
 
 
-  
-ws.on("close", async () => {
-  console.log("User disconnected");
 
-  try {
+  ws.on("close", async () => {
+    console.log("User disconnected");
 
-    const rooms = userManager.getUserRooms(ws);
+    try {
 
-    for (const roomId of rooms) {
-      await roomManager.leaveRoom(ws, roomId);
+      const rooms = userManager.getUserRooms(ws);
+
+      for (const roomId of rooms) {
+        await roomManager.leaveRoom(ws, roomId);
+      }
+
+      // REMOVE USER
+      userManager.removeUser(ws);
+
+    } catch (err) {
+      console.error("Error during leaveRoom:", err);
     }
-
-    // REMOVE USER
-    userManager.removeUser(ws);
-
-  } catch (err) {
-    console.error("Error during leaveRoom:", err);
-  }
-});
+  });
 
   ws.send(JSON.stringify({ type: "connected" }));
 });

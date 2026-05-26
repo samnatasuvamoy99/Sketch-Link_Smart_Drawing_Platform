@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, KeyboardEvent } from "react";
 import { Button, Card, Badge } from "@repo/ui";
 import { askClaude, ClaudeMessage } from "@/lib/Anthropic";
 
-const SYSTEM_PROMPT = `You are Sketch Link AI — the intelligent assistant for SketchSync, a real-time collaborative drawing platform. Help users with: platform features, drawing tools, real-time collaboration, AI describer, messaging, design tips, sketching techniques, and team workflows. Be concise, warm, and slightly creative. Use short paragraphs. No markdown headers. Use ✦ sparingly.`;
+const SYSTEM_PROMPT = `You are 𝚂𝚔𝚎𝚝𝚌𝚑𝙻𝚒𝚗𝚔 AI — the intelligent assistant for SketchSync, a real-time collaborative drawing platform. Help users with: platform features, drawing tools, real-time collaboration, AI describer, messaging, design tips, sketching techniques, and team workflows. Be concise, warm, and slightly creative. Use short paragraphs. No markdown headers. Use ✦ sparingly.`;
 
 const SUGGESTIONS = [
   "How does real-time sync work?",
@@ -21,7 +21,7 @@ export function AIChatSection() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
-      text: "Hi! I'm Sketch Link AI ✦  Ask me anything about the platform, drawing techniques, collaboration tips, or how our AI features work.",
+      text: "Hi! I'm 𝚂𝚔𝚎𝚝𝚌𝚑𝙻𝚒𝚗𝚔 AI ✦  Ask me anything about the platform, drawing techniques, collaboration tips, or how our AI features work.",
     },
   ]);
   const [input,   setInput]   = useState("");
@@ -130,7 +130,7 @@ export function AIChatSection() {
               marginBottom: 32,
             }}
           >
-            Sketch Link AI knows the platform inside out. Ask about features, get design advice, explore collaboration workflows, or discover what's possible with AI-powered drawing.
+            𝚂𝚔𝚎𝚝𝚌𝚑𝙻𝚒𝚗𝚔 AI knows the platform inside out. Ask about features, get design advice, explore collaboration workflows, or discover what's possible with AI-powered drawing.
           </p>
 
           {/* Suggestion pills */}

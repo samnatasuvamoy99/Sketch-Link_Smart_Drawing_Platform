@@ -59,13 +59,13 @@ export function Navbar({ activeSection }: { activeSection: string }) {
         <span
           style={{
             fontFamily: "'Space Mono',monospace",
-            fontWeight: 700,
-            fontSize: 16,
+            fontWeight: 900,
+            fontSize: 25,
             color: "#0F0F0F",
             letterSpacing: "-0.3px",
           }}
         >
-          SketchSync
+         𝚂𝚔𝚎𝚝𝚌𝚑𝙻𝚒𝚗𝚔
         </span>
       </div>
 
@@ -131,6 +131,5 @@ export function Navbar({ activeSection }: { activeSection: string }) {
     </nav>
   );
 }
-export default function Page() {
-  return <div<Canvas> />;
-}
+
+export default Navbar;

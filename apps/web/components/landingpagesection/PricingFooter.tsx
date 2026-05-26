@@ -2,7 +2,7 @@ import { Button, Card, CardLabel } from "@repo/ui";
 
 const PLANS = [
   {
-    name: "Sketch",
+    name: "SketchLink",
     price: "Free",
     period: "",
     desc: "Perfect for solo creatives",
@@ -208,7 +208,7 @@ export function PricingFooter() {
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                 <div style={{ width: 36, height: 36, background: "linear-gradient(135deg,#FFD700,#C8860A)", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Playfair Display',serif", fontWeight: 900, fontSize: 18, color: "#fff" }}>S</div>
-                <span style={{ fontFamily: "'Space Mono',monospace", fontWeight: 700, fontSize: 16, color: "#fff" }}>SketchSync</span>
+                <span style={{ fontFamily: "'Space Mono',monospace", fontWeight: 700, fontSize: 16, color: "#fff" }}>𝚂𝚔𝚎𝚝𝚌𝚑𝙻𝚒𝚗𝚔</span>
               </div>
               <p style={{ fontFamily: "'DM Serif Display',serif", fontSize: 14, fontStyle: "italic", color: "rgba(255,255,255,0.28)", lineHeight: 1.8, maxWidth: 280, marginBottom: 20 }}>
                 The smart drawing platform where teams think visually, collaborate in real time, and let AI illuminate their ideas.
@@ -259,7 +259,7 @@ export function PricingFooter() {
             }}
           >
             <span style={{ fontFamily: "'Space Mono',monospace", fontSize: 10, color: "rgba(255,255,255,0.18)" }}>
-              © 2025 SketchSync Inc. All rights reserved.
+              © 2025 𝚂𝚔𝚎𝚝𝚌𝚑𝙻𝚒𝚗𝚔 Inc. All rights reserved. 𝐃𝐞𝐯𝐒𝐮𝐯𝐚𝐦𝐨𝐲
             </span>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <span style={{ width: 6, height: 6, background: "#E6A800", borderRadius: "50%", display: "inline-block", boxShadow: "0 0 6px #E6A800", animation: "pulse-dot 1.5s infinite" }} />

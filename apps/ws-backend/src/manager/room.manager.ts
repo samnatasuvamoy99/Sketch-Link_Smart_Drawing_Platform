@@ -155,28 +155,66 @@ async sendMessage(
 
 
   // REALTIME DRAWING
-  async sendShapes(roomId: string, coordinate: string) {
-    try {
-      console.log("Broadcasting drawing to room:", roomId);
+  // async sendShapes(roomId: string, coordinate: string) {
+  //   try {
+  //     console.log("Broadcasting drawing to room:", roomId);
 
-      userManager.getUsers().forEach((user) => {
-        if (user.rooms.includes(roomId)) {
-          user.ws.send(
-            JSON.stringify({
-              type: "realtime_drawing",
-              roomId,
-              coordinate,
-            })
-          );
-        }
-      });
+  //     userManager.getUsers().forEach((user) => {
+  //       if (user.rooms.includes(roomId)) {
+  //         user.ws.send(
+  //           JSON.stringify({
+  //             type: "realtime_drawing",
+  //             roomId,
+  //             coordinate,
+  //           })
+  //         );
+  //       }
+  //     });
 
-      await saveCoordinate(roomId, coordinate);
-    } catch (err) {
-      console.error("SendShapes Error:", err);
+  //     await saveCoordinate(roomId, coordinate);
+  //   } catch (err) {
+  //     console.error("SendShapes Error:", err);
+  //   }
+  // }
+
+
+
+  // sendShapes needs to know the sender's ws
+async sendShapes(roomId: string, coordinate: string, senderWs?: WebSocket) {
+  try {
+    userManager.getUsers().forEach((user) => {
+      if (user.rooms.includes(roomId)) {
+        // Skip the sender
+        if (senderWs && user.ws === senderWs) return;
+        
+        user.ws.send(JSON.stringify({
+          type: "realtime_drawing",
+          roomId,
+          coordinate,
+        }));
+      }
+    });
+
+    await saveCoordinate(roomId, coordinate);
+  } catch (err) {
+    console.error("SendShapes Error:", err);
+  }
+}
+
+
+  //broadcast
+ broadcastUpdate(roomId: string, payload: object, exclude?: WebSocket) {
+  const clients = this.rooms.get(roomId); // adjust to however you store room clients
+  if (!clients) return;
+ 
+  const message = JSON.stringify(payload);
+ 
+  for (const client of clients) {
+    if (client !== exclude && client.readyState === WebSocket.OPEN) {
+      client.send(message);
     }
   }
-
+}
 
 
   //erase Coordinate

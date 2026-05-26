@@ -17,7 +17,7 @@ export default function Layout() {
   const [username, setUsername] = useState<string>("Sketch_Link");
   const [mode, setMode] = useState<"home" | "draw">("home");
   const [selectedTool, setSelectedTool] = useState<string>("pencil");
-  const [color, setColor] = useState<string>("#FFFFFF");
+  const [color, setColor] = useState<string>("#fff");
   const [ strokeWidth,setStrokeWidth] = useState<number>(1.5)
   const [strokeStyle, setStrokeStyle] = useState<StrokeStyle>("solid");
   const engineRef = useRef<SketchEngine | null>(null);

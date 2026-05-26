@@ -34,7 +34,7 @@ export function HeroSection() {
         {
           role: "user",
           content:
-            "You are the AI inside SketchSync, a smart drawing platform. A user clicked 'AI Describe'. Describe a rich imaginary sketch on a warm cream canvas — flowing curves, geometric tension, warm golden strokes — as if analyzing it live. Be poetic, precise, insightful. 3–4 sentences.",
+            "You are the AI inside  𝚂𝚔𝚎𝚝𝚌𝚑𝙻𝚒𝚗𝚔 , a smart drawing platform. A user clicked 'AI Describe'. Describe a rich imaginary sketch on a warm cream canvas — flowing curves, geometric tension, warm golden strokes — as if analyzing it live. Be poetic, precise, insightful. 3–4 sentences.",
         },
       ]);
       setAiText(reply);
@@ -123,9 +123,9 @@ export function HeroSection() {
               letterSpacing: "-2.5px",
             }}
           >
-            Sketch.
+             𝚂𝚔𝚎𝚝𝚌𝚑.
             <br />
-            <span className="gradient-text">Link.</span>
+            <span className="gradient-text">𝙻𝚒𝚗𝚔.</span>
             <br />
             <span
               style={{
@@ -287,7 +287,7 @@ export function HeroSection() {
                   marginLeft: 6,
                 }}
               >
-                canvas_01.sketch — Live
+                canvas_01.𝚂𝚔𝚎𝚝𝚌𝚑𝙻𝚒𝚗𝚔 — Live
               </span>
               <Badge
                 variant="live"
