@@ -6,7 +6,10 @@ import { SidebarProps } from "@/types/Sidebarprops";
 import type { StrokeWidth } from "@/types/Sidebarprops";
 import { PanelButton } from "./SidebarPanelButton";
 import { RoomCard } from "../room/RoomCard";
-
+import DownloadPanel from "../panels/DownloadPanel";
+import HistoryPanel from "../panels/History";
+import LayersPanel from "../panels/LayersPanel";
+import { SketchEngine } from "@/drawingservice/engine/SketchEngine";
 
 
 /* ─── Types */
@@ -58,6 +61,24 @@ function Divider() {
 }
 
 
+
+interface SketchSidebarProps {
+  isOpen:               boolean;
+  onClose:              () => void;
+  activeTool?:          string;
+  activeColor?:         string;
+  activeStrokeWidth?:   StrokeWidth;
+  onStrokeWidthChange?: (w: StrokeWidth)  => void;
+  onToolChange?:        (t: string)       => void;
+  onColorChange?:       (c: string)       => void;
+  onReset?:             ()                => void;
+  /** Pass engineRef.current from Layout */
+  engine?:              SketchEngine | null;
+}
+
+
+
+
 /* ─── Sidebar*/
 
 export function SketchSidebar({
@@ -70,10 +91,17 @@ export function SketchSidebar({
   onToolChange,
   onColorChange,
   onReset,
-}: SidebarProps) {
+  engine,
+}: SketchSidebarProps) {
   const [tool, setTool] = useState<string>(activeTool);
   const [color, setColor] = useState<string>(activeColor);
   const [strokeWidth, setStrokeWidth] = useState<StrokeWidth>(activeStrokeWidth);
+
+
+  // Which sub-panel is open (history / layers / download / room)
+  const [openPanel,   setOpenPanel]   = useState<string | null>(null);
+ 
+
 
   /*Send stroke width to parent */
   useEffect(() => {
@@ -84,9 +112,8 @@ export function SketchSidebar({
   if (!isOpen) return null;
 
   const handleTool = (id: string) => {
-    setTool(id);
-    onToolChange?.(id);
-  };
+    setOpenPanel((prev) => (prev === id ? null : id));
+  }
 
   const handleColor = (hex: string) => {
     setColor(hex);
@@ -105,7 +132,7 @@ export function SketchSidebar({
       {/* Sidebar */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className="fixed  mt-14  ml-12 rounded top-0 left-0 h-auto w-56 bg-[#1C1C1C] z-50 border-r border-white/[0.09] p-3 flex flex-col gap-3"
+        className="fixed  mt-14  ml-12 rounded top-0 left-0 h-auto w-56 bg-[#1C1C1C] z-50 border-r border-white/[0.09] p-3 flex flex-col gap-3 max-h-[85vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -162,17 +189,23 @@ export function SketchSidebar({
 
 
         {/* Panels */}
-        <div>
+        <div className="flex flex-col gap-1">
           <SectionLabel>Panels</SectionLabel>
-          {PANEL_TOOLS.map((t) => (
-            <PanelButton key={t.id} tool={t} onClick={() => handleTool(t.id)} />
-          ))}
+          <div className="flex flex-col gap-1">
+            {PANEL_TOOLS.map((t) => (
+              <PanelButton key={t.id} tool={t} onClick={() => handleTool(t.id)} 
+              
+                 // highlight the active panel button
+                  active={openPanel === t.id}
+              />
+            ))}
+          </div>
 
-          {tool === "room" && (
+          {openPanel === "room" && (
             <div className="fixed inset-0 flex items-center justify-center z-[10000]">
               <RoomCard
                 isOpen={true}
-                onClose={() => setTool("")}   // close card
+                onClose={() => setOpenPanel(null)}   // close card
                 onRoomCreated={(room) => {
                   console.log("Created:", room);
                 }}
@@ -186,16 +219,47 @@ export function SketchSidebar({
 
         <Divider />
 
-
-
         <button
           onClick={onReset}
-          className="text-red-700 text-sm  justify-center  hover:text-white text-left w-full px-1.5 py-1.5 rounded-lg border border-white/[0.07] bg-transparent hover:bg-white/[0.06] flex items-center transition"
+          className="text-red-700 text-sm justify-center hover:text-white text-left w-full px-1.5 py-1.5 rounded-lg border border-white/[0.07] bg-transparent hover:bg-white/[0.06] flex items-center transition"
         >
           Reset
-          <RotateCcw className=" hover:text-red-600 ml-1 mt-1" size={14} />
+          <RotateCcw className="hover:text-red-600 ml-1 mt-1" size={14} />
         </button>
       </div>
+
+      {/* Slide-out Secondary Flyout Panel */}
+      {openPanel && openPanel !== "room" && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="fixed mt-14 left-[280px] rounded top-0 w-64 bg-[#1C1C1C] z-50 border border-white/[0.09] p-3 flex flex-col gap-3 max-h-[85vh] overflow-y-auto shadow-2xl animate-in fade-in slide-in-from-left-2 duration-200"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-white text-[10px] font-bold uppercase tracking-wider font-mono">
+              {openPanel === "layers" && "Layer Manager"}
+              {openPanel === "history" && "Action History"}
+              {openPanel === "download" && "Export Canvas"}
+              {openPanel === "ai" && "AI Assistant"}
+            </span>
+            <button onClick={() => setOpenPanel(null)}>
+              <X size={14} className="text-white/50 hover:text-white transition" />
+            </button>
+          </div>
+
+          <Divider />
+
+          <div className="flex flex-col gap-1">
+            {openPanel === "layers" && <LayersPanel engine={engine ?? null} />}
+            {openPanel === "history" && <HistoryPanel engine={engine ?? null} />}
+            {openPanel === "download" && <DownloadPanel engine={engine ?? null} />}
+            {openPanel === "ai" && (
+              <div className="text-white/40 text-xs px-2 font-mono py-1">
+                AI Assist is ready.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

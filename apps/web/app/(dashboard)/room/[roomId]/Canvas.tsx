@@ -29,7 +29,8 @@ export function Canvas({ roomId, token }: CanvasRealtimeProps) {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [showChat, setShowChat] = useState(false);
   const engineRef = useRef<SketchEngine | null>(null);
-   const [authError, setAuthError] = useState<string | null>(null);
+  const [engine, setEngine] = useState<SketchEngine | null>(null); // ✅ ADD THIS
+  const [authError, setAuthError] = useState<string | null>(null);
   
 
 useEffect(() => {
@@ -146,6 +147,7 @@ if (authError) {
           setSelectedTool(tool)
         }}
         onStrokeChange={(style) => setStrokeStyle(style)}
+        onInsertImage={() => engineRef.current?.insertImage()}
         roomId={roomId}
         token={token}
         Socket={socket}
@@ -169,7 +171,7 @@ if (authError) {
         onReset={() => {
           engineRef.current?.resetCanvas();
         }}
-
+        engine={engine} // ✅ PASS ENGINE
       />
 
       <ChatCard
@@ -180,10 +182,10 @@ if (authError) {
       />
 
       <DrawingCanvas Socket={socket} token={token} roomId={roomId} tool={selectedTool} color={color} strokeWidth={strokeWidth} strokeStyle={strokeStyle}
-        onEngineReady={(engine) => {
-          engineRef.current = engine;
+        onEngineReady={(eng) => {
+          engineRef.current = eng;
+          setEngine(eng); // ✅ SET ENGINE STATE
         }}
-        
       />
     </div>
   );

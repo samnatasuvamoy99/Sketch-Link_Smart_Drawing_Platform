@@ -88,6 +88,7 @@ type BaseShape = {
   strokeStyle?: StrokeStyle;
   /** Optional inline label — used by rectangle and diamond via double-click editing */
   label?: string;
+  layerId?: string;
 };
 
 export type Shape =
@@ -145,6 +146,14 @@ export type Shape =
   | (BaseShape & {
       type: "pencil";
       points: { x: number; y: number }[];
+    })
+  | (BaseShape & {
+      type: "image";
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      src: string;
     });
 
 export type CanvasRealtimeProps = {

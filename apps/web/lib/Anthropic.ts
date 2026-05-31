@@ -5,7 +5,7 @@ export interface ClaudeMessage {
 }
 
 export async function askClaude(
-messages: ClaudeMessage[], SYSTEM_PROMPT: string): Promise<string> {
+messages: ClaudeMessage[], SYSTEM_PROMPT?: string): Promise<string> {
 
   const res = await fetch("/api/claude", {
     method: "POST",

@@ -12,6 +12,7 @@ type Props = {
   username?: string,
   onToolSelect?: (tool: string) => void;
   onStrokeChange?: (stroke: StrokeStyle) => void;
+  onInsertImage?: () => void;
   roomId?: string
   token?: string
   Socket?: WebSocket | null;
@@ -20,7 +21,7 @@ type Props = {
 
 
 // import 
-export function SketchNavbar({ username, onToolSelect, onStrokeChange, roomId, token, Socket }: Props) {
+export function SketchNavbar({ username, onToolSelect, onStrokeChange, onInsertImage, roomId, token, Socket }: Props) {
 
   const [activeTool, setActiveTool] = useState<string | undefined>(undefined);
   // const [strokeStyle, setStrokeStyle] = useState("solid")
@@ -67,6 +68,11 @@ export function SketchNavbar({ username, onToolSelect, onStrokeChange, roomId, t
 
   const handleToolClick = (id: string) => {
     setActiveTool(id);
+
+    if (id === "insert") {
+      onInsertImage?.(); // trigger image picker
+      return;
+    }
 
     onToolSelect?.(id); // trigger parent (Layout and canvas)
   };

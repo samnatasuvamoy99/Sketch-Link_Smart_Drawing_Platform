@@ -4,6 +4,10 @@ import { drawDiamond } from "@/drawingservice/util/Diamand";
 import { drawArrow } from "@/drawingservice/util/Drawarrow";
 import { applyStrokeStyle } from "@/drawingservice/util/StrokeStyle";
 import { distance } from "../util/PixelHitPoint";
+import { HistoryService } from "@/drawingservice/Historyservice";
+import { LayerService } from "@/drawingservice/LayerService";
+import { DownloadService, DownloadFormat } from "@/drawingservice/DownloadService";
+import { ImageService } from "@/drawingservice/ImageService";
 
 // ─── Resize handle positions ────────
 type HandlePosition =
@@ -69,6 +73,57 @@ export class SketchEngine {
 
   private cleanupSocket?: () => void;
 
+  public history = new HistoryService();
+  public layers = new LayerService();
+  public activeLayerId: string = "";
+
+  public undo() {
+    const prev = this.history.undo(this.shapes);
+    if (prev) {
+      this.shapes = prev;
+      this.redraw();
+    }
+  }
+
+  public redo() {
+    const next = this.history.redo(this.shapes);
+    if (next) {
+      this.shapes = next;
+      this.redraw();
+    }
+  }
+
+  public forceRedraw() {
+    this.redraw();
+  }
+
+  public getActiveLayerId(): string {
+    return this.activeLayerId;
+  }
+
+  public setActiveLayer(layerId: string) {
+    this.activeLayerId = layerId;
+  }
+
+  public download(format: DownloadFormat) {
+    const downloadService = new DownloadService(this.canvas, this.shapes);
+    downloadService.download(format);
+  }
+
+  public insertImage() {
+    const imageService = new ImageService(
+      this.shapes,
+      () => this.redraw(),
+      (shape) => this.send(shape),
+      this.activeLayerId
+    );
+    imageService.openFilePicker();
+  }
+
+  private pushHistory() {
+    this.history.push(this.shapes);
+  }
+
   constructor(
     canvas: HTMLCanvasElement,
     options?: {
@@ -88,8 +143,11 @@ export class SketchEngine {
     this.roomId = options?.roomId;
     this.textarea = options?.textarea;
 
+    this.activeLayerId = this.layers.defaultLayerId;
+
     if (options?.initialShapes) {
       this.shapes = options.initialShapes;
+      this.history.push(this.shapes);
     }
 
     this.setupCanvas();
@@ -238,6 +296,7 @@ export class SketchEngine {
       if (shape && shape.type === "text") {
         shape.text = value;
         this.sendUpdate(shape);
+        this.pushHistory(); //  PUSH HISTORY
         this.redraw();
         this.hideTextarea();
         return;
@@ -254,9 +313,11 @@ export class SketchEngine {
       width: 120,
       height: 40,
       color: this.color,
+      layerId: this.activeLayerId, //  ASSIGN LAYER ID
     };
 
     this.shapes.push(shape);
+    this.pushHistory(); //  PUSH HISTORY
     this.redraw();
     this.send(shape);
     this.hideTextarea();
@@ -281,6 +342,7 @@ export class SketchEngine {
       case "rectangle":
       case "diamond":
       case "text":
+      case "image":
         return {
           x: shape.x,
           y: shape.y,
@@ -420,6 +482,7 @@ export class SketchEngine {
       case "rectangle":
       case "diamond":
       case "text":
+      case "image":
         // startBox is padded, so subtract PAD to get true shape coords
         shape.x      = x + SELECTION_PAD;
         shape.y      = y + SELECTION_PAD;
@@ -508,6 +571,11 @@ export class SketchEngine {
       this.ctx.lineWidth   = s.strokeWidth || 2;
       applyStrokeStyle(this.ctx, s.strokeStyle);
 
+      if (!this.layers.isVisible(s.layerId)) {
+        this.ctx.restore();
+        continue;
+      }
+
       switch (s.type) {
         case "rectangle":
           this.ctx.strokeRect(s.x, s.y, s.width, s.height);
@@ -553,6 +621,10 @@ export class SketchEngine {
           this.ctx.font         = `${s.fontSize || 16}px sans-serif`;
           this.ctx.textBaseline = "top";
           this.ctx.fillText(s.text, s.x, s.y);
+          break;
+
+        case "image":
+          ImageService.drawShape(this.ctx, s as any, () => this.redraw());
           break;
       }
 
@@ -615,7 +687,11 @@ export class SketchEngine {
 
   private getShapeAtPosition(pos: { x: number; y: number }): Shape | null {
     for (let i = this.shapes.length - 1; i >= 0; i--) {
-      if (this.isShapeHit(this.shapes[i], pos)) return this.shapes[i];
+      const shape = this.shapes[i];
+      if (this.layers.isLocked(shape.layerId) || !this.layers.isVisible(shape.layerId)) {
+        continue;
+      }
+      if (this.isShapeHit(shape, pos)) return shape;
     }
     return null;
   }
@@ -627,6 +703,7 @@ export class SketchEngine {
       case "rectangle":
       case "diamond":
       case "text":
+      case "image":
         return (
           x >= shape.x && x <= shape.x + (shape.width  || 120) &&
           y >= shape.y && y <= shape.y + (shape.height || 40)
@@ -725,7 +802,7 @@ export class SketchEngine {
             if (handle) {
               this.isResizing     = true;
               this.resizeHandle   = handle;
-              // ✅ Snapshot the padded resize box — applyResize expects this
+              // Snapshot the padded resize box — applyResize expects this
               this.resizeStartBox = { ...resizeBox };
               this.resizeOriginX  = pos.x;
               this.resizeOriginY  = pos.y;
@@ -786,15 +863,20 @@ export class SketchEngine {
       this.redraw();
       if (!this.clicked) return;
       const newShapes: Shape[] = [];
+      let erased = false;
       for (const shape of this.shapes) {
         if (this.isShapeHit(shape, pos)) {
           this.sendErase(shape.id);
+          erased = true;
         } else {
           newShapes.push(shape);
         }
       }
-      this.shapes = newShapes;
-      this.redraw();
+      if (erased) {
+        this.shapes = newShapes;
+        this.pushHistory(); // PUSH HISTORY
+        this.redraw();
+      }
       return;
     }
 
@@ -828,6 +910,7 @@ export class SketchEngine {
         case "rectangle":
         case "diamond":
         case "text":
+        case "image":
           shape.x += dx; shape.y += dy;
           break;
         case "line":
@@ -918,7 +1001,10 @@ export class SketchEngine {
       this.resizeHandle   = null;
       this.resizeStartBox = null;
       const shape = this.shapes.find(s => s.id === this.selectedShapeId);
-      if (shape && this.moved) this.sendUpdate(shape);
+      if (shape && this.moved) {
+        this.sendUpdate(shape);
+        this.pushHistory(); // PUSH HISTORY
+      }
       this.canvas.style.cursor = "default";
       this.redraw();
       return;
@@ -928,7 +1014,10 @@ export class SketchEngine {
     if (this.tool === "select" && this.isDragging) {
       this.isDragging = false;
       const shape = this.shapes.find(s => s.id === this.selectedShapeId);
-      if (shape && this.moved) this.sendUpdate(shape);
+      if (shape && this.moved) {
+        this.sendUpdate(shape);
+        this.pushHistory(); // PUSH HISTORY
+      }
       this.canvas.style.cursor = "default";
       return;
     }
@@ -948,6 +1037,7 @@ export class SketchEngine {
           id: crypto.randomUUID(), type: "rectangle",
           x: this.startX, y: this.startY, width: dx, height: dy,
           color: this.color, strokeWidth: this.strokeWidth, strokeStyle: this.strokeStyle,
+          layerId: this.activeLayerId, // ASSIGN LAYER ID
         };
         break;
 
@@ -956,6 +1046,7 @@ export class SketchEngine {
           id: crypto.randomUUID(), type: "diamond",
           x: this.startX, y: this.startY, width: dx, height: dy,
           color: this.color, strokeWidth: this.strokeWidth, strokeStyle: this.strokeStyle,
+          layerId: this.activeLayerId, // ASSIGN LAYER ID
         };
         break;
 
@@ -964,6 +1055,7 @@ export class SketchEngine {
           id: crypto.randomUUID(), type: "line",
           x1: this.startX, y1: this.startY, x2: pos.x, y2: pos.y,
           color: this.color, strokeWidth: this.strokeWidth, strokeStyle: this.strokeStyle,
+          layerId: this.activeLayerId, // ASSIGN LAYER ID
         };
         break;
 
@@ -972,6 +1064,7 @@ export class SketchEngine {
           id: crypto.randomUUID(), type: "arrow",
           x1: this.startX, y1: this.startY, x2: pos.x, y2: pos.y,
           color: this.color, strokeWidth: this.strokeWidth, strokeStyle: this.strokeStyle,
+          layerId: this.activeLayerId, // ASSIGN LAYER ID
         };
         break;
 
@@ -982,6 +1075,7 @@ export class SketchEngine {
             centerX: this.startX, centerY: this.startY,
             radius: Math.sqrt(dx * dx + dy * dy),
             color: this.color, strokeWidth: this.strokeWidth, strokeStyle: this.strokeStyle,
+            layerId: this.activeLayerId, //  ASSIGN LAYER ID
           };
         } else {
           shape = {
@@ -989,6 +1083,7 @@ export class SketchEngine {
             centerX: this.startX, centerY: this.startY,
             radiusX: Math.abs(dx), radiusY: Math.abs(dy),
             color: this.color, strokeWidth: this.strokeWidth, strokeStyle: this.strokeStyle,
+            layerId: this.activeLayerId, // ASSIGN LAYER ID
           };
         }
         break;
@@ -998,6 +1093,7 @@ export class SketchEngine {
           id: crypto.randomUUID(), type: "pencil",
           points: this.path,
           color: this.color, strokeWidth: this.strokeWidth, strokeStyle: this.strokeStyle,
+          layerId: this.activeLayerId, //ASSIGN LAYER ID
         };
         break;
     }
@@ -1005,6 +1101,7 @@ export class SketchEngine {
     if (!shape) return;
 
     this.shapes.push(shape);
+    this.pushHistory(); //PUSH HISTORY
     this.redraw();
     this.send(shape);
   };

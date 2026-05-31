@@ -108,8 +108,8 @@ export async function saveCoordinate(roomId: string, coordinate: any) {
 export async function updateCoordinate(roomId: string, shape: any) {
   await prisma.shape.upsert({
     where: { id: shape.id },
-    update: { coordinates: JSON.stringify(shape) },
-    create: { id: shape.id,  type:shape.type ,roomId, coordinates: JSON.stringify(shape) },
+    update: { coordinates: shape },
+    create: { id: shape.id, type: shape.type, roomId, coordinates: shape },
   });
 }
 

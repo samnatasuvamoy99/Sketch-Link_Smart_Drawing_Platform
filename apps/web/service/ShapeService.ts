@@ -66,11 +66,21 @@ export async function getExistingShapes(roomId: string): Promise<Shape[]> {
     .map((item: Coordinate) => {
       const coord = item.coordinates;
 
-      // ✅ Handle BOTH formats safely
+      // ✅ Handle BOTH formats and potential double-serialized string safely
       if (!coord) return null;
 
-      if (coord.shape) return coord.shape; // old format
-      if (coord.type) return coord;        // new format
+      let parsedCoord = coord;
+      if (typeof coord === "string") {
+        try {
+          parsedCoord = JSON.parse(coord);
+        } catch (e) {
+          console.error("Failed to parse coordinates string", e);
+          return null;
+        }
+      }
+
+      if (parsedCoord.shape) return parsedCoord.shape; // old format
+      if (parsedCoord.type) return parsedCoord;        // new format
 
       return null;
     })

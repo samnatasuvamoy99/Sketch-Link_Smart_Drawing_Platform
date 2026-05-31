@@ -3,24 +3,25 @@
 import { Pencil, List } from "lucide-react";
 import { SketchNavbar } from "@/components/layout/Navbar";
 import { SketchSidebar } from "@/components/layout/Sidebar";
-import { useState, useEffect, useRef} from "react";
+import { useState, useEffect, useRef } from "react";
 import { getCurrentUserName } from "@/service/getCurrentDetails";
 import DrawingCanvas from '@/components/canvas/CanvasSocket';
 import { StrokeStyle } from "@/types/DrawingShapesTypes";
 import { SketchEngine } from "@/drawingservice/engine/SketchEngine";
 
-//Navbar →Layout(state) → DrawingCanvas → initSketch
+//Navbar → Layout(state) → DrawingCanvas → initSketch
 export default function Layout() {
-
 
   const [showPage, setShowPage] = useState(true);
   const [username, setUsername] = useState<string>("Sketch_Link");
   const [mode, setMode] = useState<"home" | "draw">("home");
   const [selectedTool, setSelectedTool] = useState<string>("pencil");
   const [color, setColor] = useState<string>("#fff");
-  const [ strokeWidth,setStrokeWidth] = useState<number>(1.5)
+  const [strokeWidth, setStrokeWidth] = useState<number>(1.5);
   const [strokeStyle, setStrokeStyle] = useState<StrokeStyle>("solid");
+
   const engineRef = useRef<SketchEngine | null>(null);
+  const [engine, setEngine] = useState<SketchEngine | null>(null); // ✅ Engine state for sidebar panels
 
   useEffect(() => {
     async function fetchUser() {
@@ -31,19 +32,15 @@ export default function Layout() {
         console.error(err);
       }
     }
-
     fetchUser();
   }, []);
-
-
-  console.log("tool",selectedTool);
 
   return (
     <div className="h-screen w-screen bg-black relative overflow-hidden">
 
-      {/* BACKGROUND (FIXED) */}
+      {/* BACKGROUND */}
       <div
-        className="absolute z-0"
+        className="absolute z-0 pointer-events-none"
         style={{
           top: "9%",
           left: "25%",
@@ -55,16 +52,15 @@ export default function Layout() {
         }}
       />
 
-      {/* NAVBAR (ALWAYS ON TOP) */}
+      {/* NAVBAR */}
       <SketchNavbar
         username={username}
-        
-        onToolSelect={(tool) =>{
-             setMode("draw");
-            setSelectedTool(tool)
-        } }
+        onToolSelect={(tool) => {
+          setMode("draw");
+          setSelectedTool(tool);
+        }}
         onStrokeChange={(style) => setStrokeStyle(style)}
-     
+        onInsertImage={() => engineRef.current?.insertImage()} // ✅ fixed: insertImage (not importImage)
       />
 
       {/* LIST BUTTON (FIXED POSITION) */}
@@ -82,12 +78,10 @@ export default function Layout() {
         <SketchSidebar
           isOpen={showPage}
           onClose={() => setShowPage(false)}
-           onColorChange={(color) => setColor(color)}
-           onStrokeWidthChange={(width) => setStrokeWidth(width)}
-            onReset={() => {
-    engineRef.current?.resetCanvas();
-  }}
-        
+          onColorChange={(c) => setColor(c)}
+          onStrokeWidthChange={(width) => setStrokeWidth(width)}
+          onReset={() => engineRef.current?.resetCanvas()}
+          engine={engine} // ✅ fixed: engine state (not engineReady)
         />
       )}
 
@@ -119,10 +113,16 @@ export default function Layout() {
       {/* CANVAS */}
       {mode === "draw" && (
         <div className="fixed inset-0 z-10 bg-black">
-          <DrawingCanvas  tool={selectedTool} color={color} strokeWidth={strokeWidth} strokeStyle={strokeStyle}
-          onEngineReady={(engine) => {
-  engineRef.current = engine;
-}} />
+          <DrawingCanvas
+            tool={selectedTool}
+            color={color}
+            strokeWidth={strokeWidth}
+            strokeStyle={strokeStyle}
+            onEngineReady={(eng) => {
+              engineRef.current = eng;
+              setEngine(eng); // ✅ fixed: setEngine (not setEngineReady)
+            }}
+          />
         </div>
       )}
     </div>
