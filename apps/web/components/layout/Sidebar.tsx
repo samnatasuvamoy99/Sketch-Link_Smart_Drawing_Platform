@@ -132,7 +132,7 @@ export function SketchSidebar({
       {/* Sidebar */}
       <div
         onClick={(e) => e.stopPropagation()}
-        className="fixed  mt-14  ml-12 rounded top-0 left-0 h-auto w-56 bg-[#1C1C1C] z-50 border-r border-white/[0.09] p-3 flex flex-col gap-3 max-h-[85vh] overflow-y-auto"
+        className="fixed  mt-16  ml-12 rounded top-0 left-0 h-auto w-56 bg-[#1C1C1C] z-50 border-r border-white/[0.09] p-3 flex flex-col gap-3 max-h-[85vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between">

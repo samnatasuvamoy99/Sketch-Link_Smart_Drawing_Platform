@@ -21,7 +21,7 @@ export default function Layout() {
   const [strokeStyle, setStrokeStyle] = useState<StrokeStyle>("solid");
 
   const engineRef = useRef<SketchEngine | null>(null);
-  const [engine, setEngine] = useState<SketchEngine | null>(null); // ✅ Engine state for sidebar panels
+  const [engine, setEngine] = useState<SketchEngine | null>(null); //  Engine state for sidebar panels
 
   useEffect(() => {
     async function fetchUser() {
@@ -29,7 +29,7 @@ export default function Layout() {
         const data = await getCurrentUserName();
         setUsername(data.username);
       } catch (err) {
-        console.error(err);
+        //console.error(err);
       }
     }
     fetchUser();
@@ -60,7 +60,7 @@ export default function Layout() {
           setSelectedTool(tool);
         }}
         onStrokeChange={(style) => setStrokeStyle(style)}
-        onInsertImage={() => engineRef.current?.insertImage()} // ✅ fixed: insertImage (not importImage)
+        onInsertImage={() => engineRef.current?.insertImage()} //  
       />
 
       {/* LIST BUTTON (FIXED POSITION) */}
@@ -81,7 +81,7 @@ export default function Layout() {
           onColorChange={(c) => setColor(c)}
           onStrokeWidthChange={(width) => setStrokeWidth(width)}
           onReset={() => engineRef.current?.resetCanvas()}
-          engine={engine} // ✅ fixed: engine state (not engineReady)
+          engine={engine} //
         />
       )}
 
@@ -120,7 +120,7 @@ export default function Layout() {
             strokeStyle={strokeStyle}
             onEngineReady={(eng) => {
               engineRef.current = eng;
-              setEngine(eng); // ✅ fixed: setEngine (not setEngineReady)
+              setEngine(eng); // 
             }}
           />
         </div>

@@ -58,7 +58,7 @@ export function CanvasDrawing({
 
       } catch (err) {
 
-        console.error(err);
+       // console.error(err);
 
       } finally {
 

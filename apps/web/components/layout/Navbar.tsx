@@ -83,7 +83,7 @@ export function SketchNavbar({ username, onToolSelect, onStrokeChange, onInsertI
   };
 
   return (
-    <div className="fixed top-0 left-0 w-full h-12 bg-[#2b2b2b] border-b border-neutral-700 flex items-center justify-between px-4 z-[100]">
+    <div className="fixed top-0 left-0 w-full h-12   bg-[#2b2b2b]  border-b border-neutral-700 flex items-center justify-between px-4 z-[100]">
 
       <div className="flex gap-2">
         {/* <div className="w-7 h-7 bg-gold-300 rounded-md flex text-xl items-center justify-center font-bold text-white">

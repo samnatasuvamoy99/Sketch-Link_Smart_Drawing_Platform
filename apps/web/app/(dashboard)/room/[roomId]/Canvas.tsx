@@ -29,7 +29,7 @@ export function Canvas({ roomId, token }: CanvasRealtimeProps) {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [showChat, setShowChat] = useState(false);
   const engineRef = useRef<SketchEngine | null>(null);
-  const [engine, setEngine] = useState<SketchEngine | null>(null); // ✅ ADD THIS
+  const [engine, setEngine] = useState<SketchEngine | null>(null); 
   const [authError, setAuthError] = useState<string | null>(null);
   
 
@@ -73,7 +73,7 @@ useEffect(() => {
 
         } catch (err) {
 
-          console.error(err);
+         // console.error(err);
 
           setAuthError(
             "Unable to join room."
@@ -129,7 +129,7 @@ useEffect(() => {
     fetchUser();
   }, []);
 
-  console.log(selectedTool);
+  //console.log(selectedTool);
 
 
 if (authError) {
@@ -171,7 +171,7 @@ if (authError) {
         onReset={() => {
           engineRef.current?.resetCanvas();
         }}
-        engine={engine} // ✅ PASS ENGINE
+        engine={engine} // PASS ENGINE
       />
 
       <ChatCard
@@ -184,7 +184,7 @@ if (authError) {
       <DrawingCanvas Socket={socket} token={token} roomId={roomId} tool={selectedTool} color={color} strokeWidth={strokeWidth} strokeStyle={strokeStyle}
         onEngineReady={(eng) => {
           engineRef.current = eng;
-          setEngine(eng); // ✅ SET ENGINE STATE
+          setEngine(eng); //  
         }}
       />
     </div>

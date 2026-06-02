@@ -28,7 +28,7 @@ export default function AuthForm({ type }: AuthFormProps) {
     try {
       if (type === "signup") {
         response = await signup({ username, email, password });
-        alert(" WELCOME to Skythch..")
+        alert(" WELCOME to  𝚂𝚔𝚎𝚝𝚌𝚑𝙻𝚒𝚗𝚔..")
         router.push("/signin");
 
       }
@@ -70,7 +70,7 @@ export default function AuthForm({ type }: AuthFormProps) {
             <div className="bg-[rgba(245,158,11,0.2)] border border-[rgba(245,158,11,0.4)] px-[14px] py-[10px] rounded-[8px] font-bold">
               S
             </div>
-            <span className="font-bold tracking-[2px]">SketchSync</span>
+            <span className="font-bold tracking-[2px]"> 𝚂𝚔𝚎𝚝𝚌𝚑𝙻𝚒𝚗𝚔</span>
           </div>
 
           <h2 className="text-[38px] mb-[15px] text-[#f59e0b]">
@@ -82,7 +82,7 @@ export default function AuthForm({ type }: AuthFormProps) {
           <p className="text-[#a1a1aa] mb-[30px]">
             {type === "signin"
               ? "Sign in and continue your journey."
-              : "Join thousands of teams using SketchSync."}
+              : "Join thousands of teams using  𝚂𝚔𝚎𝚝𝚌𝚑𝙻𝚒𝚗𝚔."}
           </p>
 
           <div>
