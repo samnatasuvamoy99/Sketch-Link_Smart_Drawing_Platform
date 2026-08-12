@@ -2,13 +2,10 @@
 ## 🌟 1. Project Overview
 
 Welcome to the ultimate digital canvas. Whether you are sketching solo on a train ride or brainstorming in a live session with your team, this application provides an endless canvas to bring your imagination to life. Built for speed, precision, and collaboration, this project heavily mimics top-tier whiteboard tools but adds infinite messaging and smart resource cleanup.
-
-
-
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ![image alt](Canvas_Area.png)
 
----
-
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ## ✨ 2. Comprehensive Features
 
 ### 🌐 Online & Offline Modes
@@ -55,27 +52,98 @@ The project uses a highly scalable, decoupled monorepo structure managed by **Tu
 <div align="center">
 
 ```mermaid
-graph TD
-    subgraph Frontend
-        Client["🎨 Next.js Web Client (App Router)"]
+graph LR
+    %% Styles
+    classDef auth fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#fff;
+    classDef room fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
+    classDef users fill:#451a03,stroke:#d97706,stroke-width:2px,color:#fff;
+    classDef realtime fill:#2e1065,stroke:#8b5cf6,stroke-width:2px,color:#fff;
+    classDef storage fill:#1c1917,stroke:#eab308,stroke-width:2px,color:#fff;
+    classDef subbox fill:#1e1e1e,stroke:#555,stroke-width:1px,color:#fff;
+
+    subgraph USERS["👥 USERS"]
+        WC[💻 Web Client]
     end
 
-    subgraph Backends
-        HTTP_API["⚡ HTTP API (Express)"]
-        WS_API["🔌 WebSocket Server (ws)"]
+    subgraph AUTH["🔒 AUTHENTICATION"]
+        SignUp([Sign Up])
+        SignIn([Sign In])
+        AuthSvc[[Auth Service]]
+        UserDB[(User DB)]
+        
+        SignUp --> AuthSvc
+        SignIn --> AuthSvc
+        AuthSvc --> UserDB
     end
 
-    subgraph Data Layer
-        DB[("🗄️ PostgreSQL Database")]
-        Prisma["🛡️ Prisma ORM"]
+    subgraph ROOM["🚪 ROOM MANAGEMENT"]
+        CreateRoom([Create Room])
+        JoinRoom([Join Room])
+        RoomSvc[[Room Service]]
+        RoomDB[(Room DB)]
+        
+        CreateRoom --> RoomSvc
+        JoinRoom --> RoomSvc
+        RoomSvc --> RoomDB
     end
 
-    Client <-->|"REST (Auth, Rooms)"| HTTP_API
-    Client <-->|"Real-time (Shapes, Chat)"| WS_API
-    
-    HTTP_API --> Prisma
-    WS_API --> Prisma
-    Prisma --> DB
+    subgraph ADMIN["⚙️ ADMIN FEATURES"]
+        HttpApi[[HTTP API]]
+        LateJoin((Late Join Handler))
+        AdminCanvas[Canvas Renderer]
+        
+        HttpApi -- HTTP request --> LateJoin
+        LateJoin --> AdminCanvas
+    end
+
+    subgraph OFFLINE["⚡ OFFLINE SERVICES"]
+        OffCanvas[Canvas Renderer]
+        subgraph OFF_SYNC["DRAWING SYNC"]
+            OffState[Canvas State]
+            OffEvents[Drawing Events]
+        end
+        OffCanvas -.-> OFF_SYNC
+    end
+
+    subgraph REALTIME["⚡ REALTIME SERVICES"]
+        WSS{{WebSocket Server}}
+        ChatSvc((Chat Service))
+        subgraph RT_SYNC["DRAWING SYNC"]
+            RTState[Canvas State]
+            RTEvents[Drawing Events]
+        end
+        
+        WSS -. messages .-> ChatSvc
+        WSS -. sync strokes .-> RT_SYNC
+    end
+
+    subgraph STORAGE["🗄️ DATA STORAGE"]
+        ChatDB[(Chat History)]
+        SessionCache[(Session Cache)]
+        DrawDB[(Drawing History)]
+    end
+
+    %% Web Client Connections
+    WC --> SignUp
+    WC --> SignIn
+    WC --> CreateRoom
+    WC --> JoinRoom
+    WC <== persistent connection ==> WSS
+    WSS -. broadcast to user .-> WC
+
+    %% Data Storage Connections
+    ChatSvc --> ChatDB
+    RT_SYNC --> SessionCache
+    RT_SYNC --> DrawDB
+    AdminCanvas -- fetch history --> DrawDB
+
+    %% Apply Classes
+    class AUTH auth;
+    class ROOM room;
+    class USERS,ADMIN users;
+    class REALTIME,OFFLINE realtime;
+    class STORAGE storage;
+    class OFF_SYNC,RT_SYNC subbox;
 ```
 
 </div>
@@ -117,6 +185,9 @@ We use **PostgreSQL** coupled with **Prisma ORM** for type-safe database access.
 
 
 <div align="center">
-  <sub>Built with ❤️ for real-time collaboration.</sub>
+  <sub>Built with ❤️ for real-time collaboration. Suvamoy@dev</sub>
 </div>
+
+
+
 
