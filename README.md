@@ -1,11 +1,10 @@
 
 ## 🌟 1. Project Overview
-
+-
 Welcome to the ultimate digital canvas. Whether you are sketching solo on a train ride or brainstorming in a live session with your team, this application provides an endless canvas to bring your imagination to life. Built for speed, precision, and collaboration, this project heavily mimics top-tier whiteboard tools but adds infinite messaging and smart resource cleanup.
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ![image alt](Canvas_Area.png)
 
------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ## ✨ 2. Comprehensive Features
 
 ### 🌐 Online & Offline Modes
